@@ -10,9 +10,16 @@ __requires__ = 'colcon-core==0.19.0'
 source = os.path.exists(os.path.join(os.getcwd(), 'src'))
 
 if source is False:
-	print('Are you in the right directory?')
-	sys.exit()
-
+	if (paths_str := os.getenv('ROSWS')) is not None:
+		paths_list = paths_str.split(":")
+		index = 0 
+		os.chdir(paths_list[index])
+		
+		# TODO(Add weighted based builds or figure out how to pass CLI after build)
+	else:
+		print("Are you sure you have any workspaces?")
+		sys.exit()
+	
 try:
     from importlib.metadata import distribution
 except ImportError:
