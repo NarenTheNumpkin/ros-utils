@@ -4,6 +4,7 @@ from importlib import import_module
 import time
 from queue import SimpleQueue
 from ros2topic.api import get_msg_class
+from rclpy.clock import Clock, ClockType
 
 class Topic(Node):
 
@@ -13,17 +14,20 @@ class Topic(Node):
         self.topic = topic 
         self.data = SimpleQueue() 
         self.message_type = get_msg_class(self, topic)
+        self.clock = Clock(clock_type = ClockType.ROS_TIME)
+        self.init_time = self.clock.now()
 
         self.subscriber_ = self.create_subscription(self.message_type, 
                                                     self.topic, 
                                                     self.sub_callback, 
                                                     qos_profile = 10)
-        
+
     def retreive(self, length):
         return [self.data.get() for i in range(length)]
 
     def sub_callback(self, msg):
-        stamp = time.time()
-        #print(f"{self.topic} : {msg.data} : {time.time() - x}")             # TODO(implement custom message field parser by looking at .msg files)
+        stamp = (self.clock.now() - self.init_time).nanoseconds / 1_000_000 
+        # TODO(implement custom message field parser by looking at .msg files)
+        # TODO(fix the delay of messages being sent)
         self.data.put((stamp, msg.data))
         

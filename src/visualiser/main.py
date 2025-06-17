@@ -15,9 +15,11 @@ class Snooper(Node):
 
     def get_topics(self):
         res = self.get_topic_names_and_types() # [(topic, [message_type]), ]
-        
+
         for topic, message in res:
             self.topics.append(Topic(topic, message)) if topic not in self.blacklisted else None
+        
+        if (len(self.topics) == 0): raise Exception("No topics found")
 
     def display(self):
         print(self.topics[0].retreive(1))
