@@ -11,20 +11,28 @@ class Snooper(Node):
         super().__init__("Snooper")
         self.blacklisted = ["/parameter_events", "/rosout"]
         self.topics = []
-        self.timer = self.create_timer(1.0, self.display)
         self.get_topics()
 
         self.plot_data = {}
-        plt.ion()
-        self.fig, self.ax = plt.subplots()
-        self.ax.set_xlabel("Time (ms)")
-        self.ax.set_ylabel("Value")
         self.lines = {}
+        self.fig, self.axs = plt.subplots(
+                                        self.len_topics, # rows
+                                        1,               # columns  
+                                        figsize = (10, 5 * self.len_topics), #TODO(MAKE IT ADJUSTABLE FOR GUI)
+                                        squeeze = False)
+        self.axs = self.axs = [ax[0] for ax in self.axs]
+        for ax in self.axs:
+            ax.set_xlabel("Time")
+            ax.set_ylabel("Data")
+            ax.grid(True)
 
-        for topic_node in self.topics:
+        for ax, topic_node in zip(self.axs, self.topics):
             self.plot_data[topic_node.topic] = {'x': [], 'y': []}
-            self.lines[topic_node.topic], = self.ax.plot([], [], label=topic_node.topic)
-        self.ax.legend()
+            self.lines[topic_node.topic], = ax.plot([], [], label=topic_node.topic)
+            ax.legend()
+        
+        plt.ion()
+        self.timer = self.create_timer(1.0, self.display)
 
     def get_topics(self):
         res = self.get_topic_names_and_types() # [(topic, [message_type]), ]
@@ -32,7 +40,9 @@ class Snooper(Node):
         for topic, message in res:
             self.topics.append(Topic(topic, message)) if topic not in self.blacklisted else None
         
-        if (len(self.topics) == 0): raise Exception("No topics found")
+        self.len_topics = len(self.topics)
+        if (self.len_topics == 0): raise Exception("No topics found") 
+        else: print(f"Found {self.len_topics} topics")
 
     def display(self):
         for topic_node in self.topics:
@@ -47,8 +57,9 @@ class Snooper(Node):
                 self.plot_data[topic_node.topic]['y'].append(value)
                 self.lines[topic_node.topic].set_data(self.plot_data[topic_node.topic]['x'],
                                                       self.plot_data[topic_node.topic]['y'])
-        self.ax.relim()
-        self.ax.autoscale_view()
+        for ax in self.axs:
+            ax.relim()
+            ax.autoscale_view()
         plt.draw()
         plt.pause(0.001)
 
